@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>MarkdownPasteAddin 侧边栏</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      color: #1e293b;
+      background: #ffffff;
+      padding: 16px;
+    }
+    .header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .logo {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white; font-size: 16px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    h1 { font-size: 16px; font-weight: 600; }
+    .subtitle { font-size: 11px; color: #64748b; }
+    .status { display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      border-radius: 8px; background: #f8fafc; margin-bottom: 12px; font-size: 12px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+    .dot.online { background: #22c55e; }
+    .dot.offline { background: #ef4444; }
+    button {
+      width: 100%; padding: 10px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;
+      margin-bottom: 8px; transition: all 0.15s;
+    }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .options { margin-top: 12px; }
+    .options label { display: flex; align-items: center; gap: 8px; padding: 4px 0;
+      font-size: 13px; cursor: pointer; }
+    .options input[type="checkbox"] { accent-color: #2563eb; }
+    .hint { margin-top: 12px; padding: 10px; border-radius: 8px;
+      background: #fef3c7; border: 1px solid #fde68a; font-size: 12px; color: #92400e; }
+    .hint.hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">W</div>
+    <div>
+      <h1>MarkdownPasteAddin</h1>
+      <p class="subtitle">智能粘贴Word v2.0</p>
+    </div>
+  </div>
+
+  <div class="status">
+    <span class="dot" id="dot"></span>
+    <span id="statusText">检测中...</span>
+  </div>
+
+  <button class="btn-primary" id="btnExportPage">导出整页内容为 Word</button>
+  <button class="btn-secondary" id="btnExportSelection">导出选中内容为 Word</button>
+
+  <div class="options">
+    <label><input type="checkbox" id="optFormat" checked> 导出后自动格式化</label>
+    <label><input type="checkbox" id="optCaptions" checked> 图表自动编号</label>
+    <label><input type="checkbox" id="optToc"> 添加目录</label>
+  </div>
+
+  <div class="hint hidden" id="serverHint">
+    桥接服务未连接。请运行 <strong>启动桥接服务.bat</strong>
+  </div>
+
+  <script src="../lib/browser-polyfill.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

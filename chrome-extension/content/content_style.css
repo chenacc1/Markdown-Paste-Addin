@@ -1,0 +1,92 @@
+/* ─── Floating Export Button ─────────────────────────────────────────────────── */
+
+#mdpaste-float-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+#mdpaste-export-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+#mdpaste-export-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.5);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+#mdpaste-export-btn:active {
+  transform: scale(0.95);
+}
+
+/* ─── Status indicator ───────────────────────────────────────────────────────── */
+
+#mdpaste-status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  border: 2px solid white;
+}
+
+#mdpaste-status.mdpaste-online {
+  background-color: #22c55e;
+}
+
+#mdpaste-status.mdpaste-offline {
+  background-color: #ef4444;
+}
+
+/* ─── Toast notification ─────────────────────────────────────────────────────── */
+
+#mdpaste-toast {
+  position: fixed;
+  bottom: 88px;
+  right: 24px;
+  z-index: 999999;
+  background: #1e293b;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  max-width: 360px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#mdpaste-toast.mdpaste-toast-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#mdpaste-toast.mdpaste-toast-hide {
+  opacity: 0;
+  transform: translateY(10px);
+}

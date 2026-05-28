@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>MarkdownPasteAddin</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">W</div>
+      <div class="header-text">
+        <div class="title">MarkdownPasteAddin</div>
+        <div class="version">v3.0 · 支持 Chrome & Edge</div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="status" id="statusBar">
+      <div class="status-dot" id="statusDot"></div>
+      <div class="status-text" id="statusText">Checking bridge...</div>
+    </div>
+
+    <!-- Main action: Paste & Export (copies clipboard, exports directly) -->
+    <button class="btn-export" id="btnPasteExport">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      Paste &amp; Export
+    </button>
+    <p class="button-hint">先 Ctrl+C 复制 DeepSeek 内容，再点此按钮</p>
+
+    <button class="btn-secondary" id="btnExportPage">
+      Export Page Content
+    </button>
+
+    <button class="btn-secondary" id="btnExportSelection">
+      Export Selected Text
+    </button>
+
+    <!-- Format preset -->
+    <div class="section">
+      <label class="section-label">Report Format</label>
+      <select id="presetSelect" class="preset-select">
+        <option value="business">Business Report</option>
+        <option value="academic">Academic Paper</option>
+        <option value="govt">Government Doc</option>
+      </select>
+    </div>
+
+    <!-- Quick options -->
+    <div class="section">
+      <label class="section-label">Options</label>
+      <div class="option-chips">
+        <label class="chip" id="chipToc">
+          <input type="checkbox" id="optToc"> TOC
+        </label>
+        <label class="chip" id="chipCaptions">
+          <input type="checkbox" id="optCaptions" checked> Numbering
+        </label>
+        <label class="chip" id="chipFormat">
+          <input type="checkbox" id="optFormat" checked> Format
+        </label>
+        <label class="chip" id="chipCover">
+          <input type="checkbox" id="optCover"> Cover
+        </label>
+      </div>
+    </div>
+
+    <!-- Server hint -->
+    <div class="hint" id="serverHint">
+      <span class="hint-icon">i</span>
+      <span>Bridge server offline. Run <code>启动桥接服务.bat</code></span>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <a href="#" id="linkOptions">Settings</a>
+      <span>v3.0</span>
+    </div>
+  </div>
+
+  <script src="../lib/browser-polyfill.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

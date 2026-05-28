@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui"
+          onLoad="Ribbon_Load">
+    <ribbon>
+        <tabs>
+            <tab id="tabMarkdownPaste"
+                 label="Markdown Paste">
+                <group id="grpSmartPaste"
+                       label="Smart Paste"
+                       autoScale="true">
+                    <button id="btnSmartPaste"
+                            label="Smart Paste"
+                            screentip="Paste Markdown content as formatted Word content"
+                            supertip="Converts Markdown tables to Word tables and Mermaid diagrams to images."
+                            onAction="OnSmartPasteClick"
+                            imageMso="Paste"
+                            size="large" />
+                    <button id="btnSettings"
+                            label="Settings"
+                            screentip="Configure Smart Paste settings"
+                            onAction="OnSettingsClick"
+                            imageMso="OptionsDialog" />
+                </group>
+            </tab>
+        </tabs>
+    </ribbon>
+</customUI>

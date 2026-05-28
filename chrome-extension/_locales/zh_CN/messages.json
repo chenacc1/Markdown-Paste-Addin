@@ -1,0 +1,53 @@
+{
+  "extName": {
+    "message": "MarkdownPasteAddin - 智能粘贴Word"
+  },
+  "extDesc": {
+    "message": "一键将网页中的Markdown/表格/流程图/数学公式内容导出为Word文档。支持DeepSeek、ChatGPT等AI平台。"
+  },
+  "exportButton": {
+    "message": "导出Word"
+  },
+  "exportSelected": {
+    "message": "导出选中内容为Word"
+  },
+  "exportPage": {
+    "message": "导出整页内容为Word"
+  },
+  "serviceOffline": {
+    "message": "桥接服务未启动"
+  },
+  "serviceOnline": {
+    "message": "桥接服务已连接"
+  },
+  "startService": {
+    "message": "请运行 启动桥接服务.bat"
+  },
+  "converting": {
+    "message": "正在转换..."
+  },
+  "done": {
+    "message": "导出完成"
+  },
+  "error": {
+    "message": "转换失败"
+  },
+  "noContent": {
+    "message": "未检测到可导出的内容"
+  },
+  "options": {
+    "message": "设置"
+  },
+  "toc": {
+    "message": "添加目录"
+  },
+  "autoCaptions": {
+    "message": "图表自动编号"
+  },
+  "formatAfter": {
+    "message": "导出后格式化"
+  },
+  "imageWidth": {
+    "message": "图片最大宽度(英寸)"
+  }
+}

@@ -1,0 +1,9 @@
+python-docx>=0.8.11
+requests>=2.28.0
+pywin32>=305
+beautifulsoup4>=4.12.0
+html5lib>=1.1
+Pygments>=2.15.0
+tqdm>=4.65.0
+lxml>=4.9.0
+openai>=1.0.0

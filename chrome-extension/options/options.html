@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>MarkdownPasteAddin 设置</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 400px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      color: #1e293b;
+      padding: 24px;
+      background: #fff;
+    }
+    h1 { font-size: 18px; margin-bottom: 20px; }
+    h2 { font-size: 14px; font-weight: 600; margin: 20px 0 8px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group { margin-bottom: 16px; }
+    label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+    input[type="checkbox"] { accent-color: #2563eb; width: 16px; height: 16px; }
+    input[type="text"], input[type="number"] { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; margin-top: 4px; }
+    .hint { font-size: 12px; color: #64748b; margin-top: 4px; }
+    .actions { margin-top: 24px; display: flex; gap: 8px; }
+    button { padding: 8px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-family: inherit; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+    .saved { color: #22c55e; font-size: 13px; margin-left: 8px; opacity: 0; transition: opacity 0.3s; }
+    .saved.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <h1>MarkdownPasteAddin 设置</h1>
+
+  <h2>默认导出选项</h2>
+  <div class="form-group">
+    <label><input type="checkbox" id="defaultToc"> 添加目录 (TOC)</label>
+  </div>
+  <div class="form-group">
+    <label><input type="checkbox" id="defaultCaptions" checked> 图表自动编号 (图1, 表1...)</label>
+  </div>
+  <div class="form-group">
+    <label><input type="checkbox" id="defaultFormat" checked> 导出后自动格式化</label>
+  </div>
+  <div class="form-group">
+    <label>默认图片宽度 (英寸)</label>
+    <input type="number" id="defaultImageWidth" value="5.5" min="1" max="8" step="0.5">
+    <p class="hint">图片超过此宽度时自动缩放，保持比例</p>
+  </div>
+
+  <h2>桥接服务</h2>
+  <div class="form-group">
+    <label>服务地址</label>
+    <input type="text" id="bridgeUrl" value="http://localhost:9876" placeholder="http://localhost:9876">
+    <p class="hint">修改此地址以连接不同的桥接服务实例</p>
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" id="btnSave">保存</button>
+    <button class="btn-secondary" id="btnReset">恢复默认</button>
+    <span class="saved" id="savedIndicator">已保存</span>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
