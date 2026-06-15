@@ -2,7 +2,7 @@
 set SCRIPT=%~dp0format_docx.py
 
 echo ========================================
-echo   Word 文档格式统一工具 v2.0
+echo   Word 文档格式统一工具 v3.2
 echo ========================================
 echo.
 echo   将 .docx 文件拖放到本窗口，按 Enter

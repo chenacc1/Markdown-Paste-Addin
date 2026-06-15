@@ -202,12 +202,12 @@ def make_screenshot2():
     d.rect((px+14, py+10, px+44, py+40), BLUE, radius=10)
     d.text((px+29, py+22), "W", size=18, bold=True, color=WHITE, anchor="mm")
     d.text((px+54, py+14), "MarkdownPasteAddin", size=14, bold=True, cjk=True)
-    d.text((px+54, py+32), "v3.0 · Chrome & Edge", size=10, color=GRAY)
+    d.text((px+54, py+32), "v3.2 · Chrome & Edge", size=10, color=GRAY)
 
     # Status
     d.rect((px+14, py+52, px+pw-14, py+74), LIGHT, radius=8)
     d.circle((px+24, py+63), 4, GREEN)
-    d.text((px+34, py+59), "Connected · v2.0.0", size=11, color=GRAY)
+    d.text((px+34, py+59), "Connected · v3.2.0", size=11, color=GRAY)
 
     # Export button
     d.rect((px+14, py+86, px+pw-14, py+120), BLUE, radius=10)

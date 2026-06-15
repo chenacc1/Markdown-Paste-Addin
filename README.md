@@ -1,11 +1,14 @@
-# MarkdownPasteAddin v2.0 — Markdown 智能粘贴 Word 工具
+# MarkdownPasteAddin v3.2 — Markdown 智能粘贴 Word 工具
 
 将从 DeepSeek、网页、Markdown 文件复制的含**表格、流程图、数学公式、代码、图片**的内容，自动转换为 Word 原生格式；并对 Word 文档进行**标题、图题、表题、正文**格式统一。
 
-## 新功能 (v2.0)
+## 新功能 (v3.2)
 
 | 功能 | 说明 |
 |------|------|
+| **Chrome/Edge 扩展** | 一键从网页导出为 Word，支持离线转换 |
+| **离线 JS 引擎** | `docx-builder.js` 浏览器内直接生成 .docx |
+| **桥接服务** | 扩展可选连接本地 Python 服务获得完整功能 |
 | **数学公式** | `$...$` / `$$...$$` → Word 原生 OMML 公式 |
 | **代码高亮** | ```python 代码块 → 语法高亮着色 (Pygments) |
 | **任务列表** | `- [ ]` / `- [x]` → 复选框列表 |
@@ -14,15 +17,14 @@
 | **分割线** | `---` / `***` → Word 水平分割线 |
 | **目录生成** | 自动插入 TOC 域代码 (Word 中右键更新) |
 | **图表自动编号** | 图1、图2、表1、表2 自动递增 |
-| **页眉页脚** | 自动页码 / 文档标题 (需模板) |
+| **报告格式预设** | 政府公文 / 学术论文 / 商务报告 |
+| **页眉页脚** | 自动页码 / 文档标题 |
 | **Word 模板** | `--template T.docx` 基于模板生成 |
 | **批量转换** | `batch_convert.py *.md output/` |
 | **文件监控** | `watch_convert.py` 文件变化自动转换 |
-| **进度反馈** | tqdm 进度条 (可选项) |
 | **错误恢复** | 单个 chunk 失败不影响后续 (红色标记) |
 | **GUI 桌面版** | `gui_app.py` tkinter 图形界面 |
 | **DeepSeek API** | `deepseek_api.py` 直接提问/对话转 Word |
-| **多轮对话合并** | Q&A 格式导出完整对话记录 |
 
 ---
 
@@ -30,35 +32,46 @@
 
 ```
 MarkdownPasteAddin/
-├── md2docx.py                   # 核心工具：剪贴板/文件 → Word (.docx)
-├── format_docx.py               # 格式工具：统一 Word 文档的段落格式
-├── batch_convert.py             # 批量转换工具
-├── watch_convert.py             # 文件监控自动转换
-├── deepseek_api.py              # DeepSeek API 集成
-├── gui_app.py                   # GUI 桌面版
-├── md2docx_lib/                 # 核心库 (新)
+├── chrome-extension/             # Chrome/Edge 扩展
+│   ├── manifest.json             # Manifest V3
+│   ├── background.js             # Service Worker
+│   ├── lib/docx-builder.js       # 离线 docx 生成引擎
+│   ├── content/content_script.js # 页面注入 + 内容捕获
+│   ├── popup/                    # 工具栏弹窗 + 侧边栏
+│   └── options/                  # 设置页面
+├── bridge_server.py              # 扩展桥接服务 (localhost:9876)
+├── md2docx.py                    # 核心工具：剪贴板/文件 → Word (.docx)
+├── format_docx.py                # 格式工具：统一 Word 文档的段落格式
+├── batch_convert.py              # 批量转换工具
+├── watch_convert.py              # 文件监控自动转换
+├── deepseek_api.py               # DeepSeek API 集成
+├── gui_app.py                    # GUI 桌面版
+├── md2docx_lib/                  # 核心库
 │   ├── __init__.py
-│   ├── clipboard.py             # 剪贴板读取
-│   ├── parser_markdown.py       # Markdown 解析器
-│   ├── parser_html.py           # HTML 解析器
-│   ├── parser_math.py           # LaTeX → OMML 转换器
-│   ├── renderer_mermaid.py      # Mermaid 渲染
-│   ├── renderer_code.py         # 代码语法高亮
-│   ├── renderer_image.py        # 图片下载
-│   ├── builder_docx.py          # Word 文档构建器
-│   ├── builder_toc.py           # TOC 目录生成
-│   ├── builder_numbering.py     # 图表自动编号
-│   ├── formatter.py             # 格式统一
-│   └── template.py              # 模板支持
-├── 粘贴转Word.bat                # 一键快捷方式
-├── 格式化Word文档.bat            # 格式统一快捷方式
-├── GUI启动.bat                  # 图形界面快捷方式
-├── 批量转换.bat                  # 批量转换快捷方式
-├── DeepSeek提问转Word.bat        # API 提问快捷方式
-├── requirements.txt             # Python 依赖
-├── src/                         # C# VSTO 插件版
+│   ├── clipboard.py              # 剪贴板读取
+│   ├── parser_markdown.py        # Markdown 解析器
+│   ├── parser_html.py            # HTML 解析器
+│   ├── parser_math.py            # LaTeX → OMML 转换器
+│   ├── inline_processor.py       # 内联格式处理
+│   ├── renderer_mermaid.py       # Mermaid 渲染
+│   ├── renderer_code.py          # 代码语法高亮
+│   ├── renderer_image.py         # 图片下载
+│   ├── builder_docx.py           # Word 文档构建器
+│   ├── builder_toc.py            # TOC 目录生成
+│   ├── builder_numbering.py      # 图表自动编号
+│   ├── report_standards.py       # 报告格式标准
+│   ├── formatter.py              # 格式统一
+│   └── template.py               # 模板支持
+├── 粘贴转Word.bat                 # 一键快捷方式
+├── 格式化Word文档.bat             # 格式统一快捷方式
+├── GUI启动.bat                   # 图形界面快捷方式
+├── 批量转换.bat                   # 批量转换快捷方式
+├── DeepSeek提问转Word.bat         # API 提问快捷方式
+├── 启动桥接服务.bat               # 桥接服务启动
+├── requirements.txt              # Python 依赖
+├── src/                          # C# VSTO 插件版
 │   └── MarkdownPasteAddin/
-└── tests/                       # 测试
+└── tests/                        # 测试
 ```
 
 ---
@@ -87,7 +100,33 @@ pip install -r requirements.txt
 
 ---
 
-## 工具一：md2docx — 粘贴转 Word
+## 工具一：Chrome/Edge 扩展
+
+### 功能
+
+一键从任意网页导出内容为 Word，无需安装 Python。
+
+- **离线模式** — 安装即用，浏览器内直接生成 .docx
+- **桥接模式** — 连接本地 Python 服务获得流程图、公式、报告排版等完整功能
+
+### 安装
+
+```
+Chrome:  chrome://extensions/ → 开发者模式 → 加载已解压的扩展 → 选择 chrome-extension/
+Edge:    edge://extensions/ → 开发人员模式 → 加载解压缩的扩展 → 选择 chrome-extension/
+```
+
+### 桥接服务（可选）
+
+```bash
+pip install -r requirements.txt
+启动桥接服务.bat
+# 或: python bridge_server.py
+```
+
+---
+
+## 工具二：md2docx — 粘贴转 Word
 
 ### 功能
 
@@ -128,7 +167,7 @@ python md2docx.py input.md output.docx --image-width 6.0
 
 ---
 
-## 工具二：format_docx — Word 格式统一
+## 工具三：format_docx — Word 格式统一
 
 ### 格式预设
 
@@ -153,7 +192,7 @@ python format_docx.py --lang en 文档.docx         # 英文格式 (Times New Ro
 
 ---
 
-## 工具三：deepseek_api — DeepSeek 直连
+## 工具四：deepseek_api — DeepSeek 直连
 
 ### 用法
 
@@ -176,7 +215,7 @@ python deepseek_api.py "问题" out.docx --save-conversation chat.json
 
 ---
 
-## 工具四：GUI 桌面版
+## 工具五：GUI 桌面版
 
 ```bash
 python gui_app.py
@@ -186,7 +225,7 @@ python gui_app.py
 
 ---
 
-## 工具五：批量转换 & 文件监控
+## 工具六：批量转换 & 文件监控
 
 ```bash
 # 批量转换目录

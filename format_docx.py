@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Word Document Format Unifier (v2.0)
+Word Document Format Unifier (v3.2)
 Auto-detect heading/caption/body types and apply consistent formatting.
 
 Usage:
@@ -25,7 +25,7 @@ from md2docx_lib.formatter import (
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Word document format unifier (v2.0)"
+        description="Word document format unifier (v3.2)"
     )
     parser.add_argument("input", nargs="?", help="Input .docx file path")
     parser.add_argument("output", nargs="?", help="Output path (default: overwrite)")

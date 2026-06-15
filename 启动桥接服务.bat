@@ -2,7 +2,7 @@
 title MarkdownPasteAddin Bridge Server
 
 echo ========================================
-echo   MarkdownPasteAddin 桥接服务 v2.0
+echo   MarkdownPasteAddin 桥接服务 v3.2
 echo ========================================
 echo.
 echo   用于 Chrome 扩展连接

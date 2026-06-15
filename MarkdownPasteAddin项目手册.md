@@ -1,4 +1,4 @@
-# MarkdownPasteAddin v2.0 项目手册
+# MarkdownPasteAddin v3.2 项目手册
 
 ## 执行操作指南 · 架构说明 · 完整参考
 
@@ -42,6 +42,8 @@ DeepSeek API    →  (同 md 解析)   │
 |------|----------|
 | v1.0 | 表格、Mermaid 流程图、图片、基础文本 |
 | v2.0 | 数学公式、代码高亮、任务列表、引用块、分割线、嵌套列表、TOC、图表编号、批量转换、文件监控、GUI、DeepSeek API |
+| v3.0 | Chrome/Edge 扩展、桥接服务、报告格式预设、封面页、页眉页脚、HTML解析器、中文格式 |
+| v3.2 | 离线 JS docx 引擎 (docx-builder.js)、LaTeX 引擎重写、扩展离线优先架构、GUI 界面重构 |
 
 ---
 
@@ -755,7 +757,7 @@ print(f'Parsed {len(chunks)} chunks')
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│              MarkdownPasteAddin v2.0                    │
+│              MarkdownPasteAddin v3.2                    │
 │                   快速参考                               │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
@@ -789,4 +791,4 @@ print(f'Parsed {len(chunks)} chunks')
 
 ---
 
-*文档版本: 2.0 | 最后更新: 2026-05-27 | 项目许可: MIT*
+*文档版本: 3.2 | 最后更新: 2026-06-15 | 项目许可: MIT*

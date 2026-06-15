@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-md2docx — Clipboard/File to Word (.docx) Converter (v2.0)
+md2docx — Clipboard/File to Word (.docx) Converter (v3.2)
 
 Copy content from DeepSeek, web pages, or Markdown files and convert to Word with:
   - Markdown/HTML tables    → Word-native tables

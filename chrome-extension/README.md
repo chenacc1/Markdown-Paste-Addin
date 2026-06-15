@@ -1,8 +1,8 @@
-# MarkdownPasteAddin 浏览器扩展 v3.1
+# MarkdownPasteAddin 浏览器扩展 v3.2
 
 **支持浏览器**: Google Chrome 88+ | Microsoft Edge 102+ | 所有 Chromium 浏览器
 
-一键将网页中的 Markdown/表格/代码块导出为 Word 文档。**安装即用**，无需安装 Python 或启动额外服务。
+一键将网页中的 Markdown/表格/代码块导出为 Word 文档。**安装即用，离线优先**，无需安装 Python 或启动额外服务。桥接服务为可选增强。
 
 ---
 
