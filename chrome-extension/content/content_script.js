@@ -92,10 +92,10 @@
       if (statusEl) {
         if (response?.online) {
           statusEl.className = 'mdpaste-online';
-          statusEl.title = '桥接服务 v' + (response.version || '?');
+          statusEl.title = 'Bridge connected v' + (response.version || '?') + ' | Full features';
         } else {
-          statusEl.className = 'mdpaste-offline';
-          statusEl.title = '桥接服务未连接，请运行 启动桥接服务.bat';
+          statusEl.className = 'mdpaste-online';
+          statusEl.title = 'Offline mode | Click to export as Word';
         }
       }
     });

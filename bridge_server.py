@@ -27,7 +27,7 @@ from md2docx_lib import parse_markdown, parse_html
 from md2docx_lib.builder_docx import DocumentBuilder
 from md2docx_lib.formatter import format_document
 
-VERSION = "2.0.0"
+VERSION = "3.2.0"
 DEFAULT_PORT = 9876
 
 
@@ -40,7 +40,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
     # ── CORS headers (extension runs from chrome-extension:// origin) ───────────
 
     def _set_cors(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
+        # Restrict CORS to extension origins and localhost only
+        origin = self.headers.get("Origin", "")
+        allowed = ("chrome-extension://", "moz-extension://",
+                   "http://127.0.0.1", "http://localhost")
+        if any(origin.startswith(p) for p in allowed):
+            self.send_header("Access-Control-Allow-Origin", origin)
+        else:
+            self.send_header("Access-Control-Allow-Origin", "http://127.0.0.1")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
@@ -90,10 +97,6 @@ class BridgeHandler(BaseHTTPRequestHandler):
             if not content.strip():
                 self._error(400, "Empty content")
                 return
-
-            # Strip leftover markdown markers from clipboard plain text
-            from md2docx_lib.inline_processor import clean_text
-            content = clean_text(content)
 
             print(f"  Converting: {len(content)} chars, format={fmt}")
             print(f"  Options: {options}")
@@ -155,20 +158,29 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     docx_bytes = f.read()
 
                 # Send response
-                filename = self._sanitize_filename(
-                    options.get("title", "export")) + ".docx"
+                raw_title = options.get("title", "export")
+                filename = self._sanitize_filename(raw_title)
+                if filename is None:
+                    # Non-ASCII title: use RFC 5987 filename* for proper Chinese support
+                    from urllib.parse import quote
+                    safe_name = raw_title.strip() or "export"
+                    safe_name = __import__('re').sub(r'[<>:"/\\|?*]', '_', safe_name)[:80]
+                    ascii_fallback = safe_name.encode('ascii', errors='ignore').decode('ascii').strip('_') or "export"
+                    disposition = (f"attachment; filename=\"{ascii_fallback}.docx\"; "
+                                   f"filename*=UTF-8''{quote(safe_name + '.docx')}")
+                else:
+                    disposition = f'attachment; filename="{filename}.docx"'
 
                 self.send_response(200)
                 self._set_cors()
                 self.send_header("Content-Type",
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                self.send_header("Content-Disposition",
-                    f'attachment; filename="{filename}"')
+                self.send_header("Content-Disposition", disposition)
                 self.send_header("Content-Length", str(len(docx_bytes)))
                 self.end_headers()
                 self.wfile.write(docx_bytes)
 
-                print(f"  OK: {filename} ({len(docx_bytes)} bytes)")
+                print(f"  OK: {raw_title}.docx ({len(docx_bytes)} bytes)")
 
             finally:
                 try:
@@ -193,12 +205,19 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
     def _sanitize_filename(self, name: str) -> str:
         import re
+        from urllib.parse import quote
         name = name.strip() or "export"
-        # Remove all non-ASCII characters (HTTP headers are ASCII-only)
-        name = name.encode('ascii', errors='ignore').decode('ascii')
-        name = re.sub(r'[<>:"/\\|?*\s]', '_', name)
+        # Remove filesystem-unsafe characters
+        name = re.sub(r'[<>:"/\\|?*]', '_', name)
         name = name.strip('_') or "export"
-        return name[:80]
+        name = name[:80]
+        # Use RFC 5987 encoding for non-ASCII characters in Content-Disposition
+        ascii_name = name.encode('ascii', errors='ignore').decode('ascii').strip('_') or "export"
+        if ascii_name != name:
+            # Non-ASCII characters present; use filename* with UTF-8 encoding
+            encoded = quote(name)
+            return None  # signal caller to use filename* instead
+        return name
 
 
 def main():

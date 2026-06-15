@@ -61,7 +61,7 @@ python _repack.py
 ### 商店描述（中文）
 
 ```
-# MarkdownPasteAddin v3.0
+# MarkdownPasteAddin v3.2
 
 一键将网页中的 Markdown 内容、表格、流程图、数学公式、代码块转换为 Microsoft Word 原生格式 (.docx)。
 
@@ -98,17 +98,39 @@ python _repack.py
 - 图片最大宽度可调
 - 桥接服务地址可自定义
 
+## 离线模式 vs 桥接服务
+
+本扩展为**离线优先**设计，安装即用，无需任何额外依赖。桥接服务为可选增强组件。
+
+| 功能 | 纯扩展（离线） | 桥接服务 |
+|------|:---:|:---:|
+| Markdown 标题/段落 | ✅ | ✅ |
+| 表格 | ✅ | ✅ |
+| 代码块 | ✅ 等宽字体 | ✅ Pygments 语法着色 |
+| 任务列表 | ✅ | ✅ |
+| 引用块 | ✅ | ✅ |
+| 图片 | ✅ | ✅ |
+| 分割线 | ✅ | ✅ |
+| Mermaid 流程图 | — | ✅ 自动渲染 PNG |
+| LaTeX 数学公式 | — | ✅ Word OMML 原生公式 |
+| 目录/TOC | — | ✅ |
+| 图表自动编号 | — | ✅ |
+| 报告格式预设 | — | ✅ 三种预设风格 |
+| 封面/页眉页脚 | — | ✅ |
+
+日常 Markdown 转 Word 无需桥接服务。需要流程图、数学公式、专业报告排版时才需安装。
+
 ## 如何使用
 
 1. 安装此扩展
-2. 下载并运行本地桥接服务（见下方说明）
-3. 浏览任何包含结构化内容的网页（如 DeepSeek 对话）
-4. 点击右下角蓝色"W"浮动按钮，或选中内容后右键导出
-5. .docx 文件自动下载，直接在 Microsoft Word 中打开编辑
+2. 浏览任何包含结构化内容的网页（如 DeepSeek 对话）
+3. 点击右下角蓝色"W"浮动按钮，或选中内容后右键导出
+4. .docx 文件自动下载，直接在 Microsoft Word 中打开编辑
+5. （可选）安装本地桥接服务以获得流程图、公式、报告排版等高级功能
 
-## 本地桥接服务
+## 本地桥接服务（可选）
 
-本扩展通过本地 HTTP 服务 (127.0.0.1:9876) 实现完整的 Word 文档生成。所有数据在本地处理，不会上传到任何远程服务器。
+本扩展可连接本地 HTTP 桥接服务 (127.0.0.1:9876) 实现更完整的 Word 文档生成。所有数据在本地处理，不会上传到任何远程服务器。
 
 桥接服务下载和安装说明: https://github.com/user/MarkdownPasteAddin
 
@@ -132,9 +154,9 @@ python _repack.py
 ### 商店描述（English）
 
 ```
-# MarkdownPasteAddin v3.0
+# MarkdownPasteAddin v3.2
 
-One-click export of Markdown content, tables, flowcharts, math formulas, and code blocks to native Microsoft Word format (.docx).
+One-click export of Markdown content, tables, flowcharts, math formulas, and code blocks to native Microsoft Word format (.docx). No bridge server required for basic use.
 
 ## Key Features
 
@@ -169,17 +191,39 @@ One-click export of Markdown content, tables, flowcharts, math formulas, and cod
 - Adjustable image max width
 - Customizable bridge server address
 
+## Offline Mode vs Bridge Server
+
+This extension is **offline-first** — works immediately after installation with no dependencies. The bridge server is an optional enhancement.
+
+| Feature | Extension Only (Offline) | Bridge Server |
+|---------|:---:|:---:|
+| Markdown headings/paragraphs | ✅ | ✅ |
+| Tables | ✅ | ✅ |
+| Code blocks | ✅ Monospace | ✅ Pygments syntax highlighting |
+| Task lists | ✅ | ✅ |
+| Blockquotes | ✅ | ✅ |
+| Images | ✅ | ✅ |
+| Horizontal rules | ✅ | ✅ |
+| Mermaid diagrams | — | ✅ Auto-rendered PNG |
+| LaTeX math formulas | — | ✅ Word OMML native equations |
+| Table of Contents | — | ✅ |
+| Auto figure/table numbering | — | ✅ |
+| Report format presets | — | ✅ Three preset styles |
+| Cover page / Headers & footers | — | ✅ |
+
+For everyday Markdown-to-Word conversion, the extension alone is sufficient. Install the bridge server only when you need flowcharts, math formulas, or professional report formatting.
+
 ## How to Use
 
 1. Install this extension
-2. Download and run the local bridge server (see below)
-3. Browse any page with structured content (e.g., DeepSeek conversations)
-4. Click the blue "W" floating button at bottom-right, or right-click selection
-5. .docx file auto-downloads, open directly in Microsoft Word
+2. Browse any page with structured content (e.g., DeepSeek conversations)
+3. Click the blue "W" floating button at bottom-right, or right-click selection
+4. .docx file auto-downloads, open directly in Microsoft Word
+5. (Optional) Install the local bridge server for flowcharts, math formulas, and report presets
 
-## Local Bridge Server
+## Local Bridge Server (Optional)
 
-This extension communicates with a local HTTP bridge service (127.0.0.1:9876) for full-featured Word document generation. All data is processed locally on your computer — nothing is uploaded to any remote server.
+This extension can connect to a local HTTP bridge service (127.0.0.1:9876) for enhanced Word document generation. All data is processed locally on your computer — nothing is uploaded to any remote server.
 
 Bridge server download: https://github.com/user/MarkdownPasteAddin
 

@@ -1,6 +1,6 @@
 """md2docx_lib — Markdown/HTML to Word document conversion library."""
 
-__version__ = "2.0.0"
+__version__ = "3.2.0"
 
 from .parser_markdown import parse_markdown
 from .parser_html import parse_html

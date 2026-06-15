@@ -61,14 +61,15 @@ async function checkHealth() {
     if (resp.ok) {
       const data = await resp.json();
       dot.className = 'status-dot online';
-      text.textContent = `Connected · v${data.version}`;
+      text.textContent = `Bridge connected · v${data.version}`;
       hint.classList.add('hidden');
       return;
     }
   } catch {}
-  dot.className = 'status-dot offline';
-  text.textContent = 'Bridge offline';
-  hint.classList.remove('hidden');
+  // Bridge offline — local mode is always available
+  dot.className = 'status-dot online';
+  text.textContent = 'Ready (offline mode)';
+  hint.classList.add('hidden');
 }
 
 // --- Paste & Export (reads clipboard from page) --------------------------------
@@ -84,7 +85,7 @@ async function pasteAndExport() {
       try {
         await sendToBridge(text.trim(), 'text');
       } catch (e) {
-        setStatus('error', 'Bridge offline? ' + e.message);
+        setStatus('error', e.message);
       }
     } else {
       setStatus('error', 'Clipboard empty. Copy from DeepSeek first (Ctrl+C), then click this button.');
@@ -182,33 +183,21 @@ async function exportSelection() {
 
 async function sendToBridge(content, format) {
   const options = getOptions();
-  const resp = await fetch(`${BRIDGE_URL}/api/convert`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content, format, options })
+
+  // Use background service worker — it tries bridge first, falls back to local
+  const result = await chrome.runtime.sendMessage({
+    action: 'convert',
+    content: content,
+    format: format || 'markdown',
+    options: options
   });
 
-  if (!resp.ok) {
-    const err = await resp.text();
-    throw new Error('Server ' + resp.status + ': ' + err.substring(0, 200));
+  if (!result || !result.success) {
+    throw new Error(result?.error || 'Conversion failed');
   }
 
-  // Convert blob to base64 data URL, then use downloads API with saveAs dialog
-  const blob = await resp.blob();
-  const reader = new FileReader();
-  const dataUrl = await new Promise((resolve, reject) => {
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-
-  await chrome.downloads.download({
-    url: dataUrl,
-    filename: 'export.docx',
-    saveAs: true
-  });
-
-  setStatus('done', 'Choose save location...');
+  const via = result.via || 'bridge';
+  setStatus('done', via === 'local' ? 'Done (offline mode)' : 'Choose save location...');
   setTimeout(() => window.close(), 2000);
 }
 

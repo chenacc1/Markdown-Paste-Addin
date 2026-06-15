@@ -291,10 +291,19 @@ def _apply_run_font(run, fmt: dict):
 
 
 def set_default_font(doc: Document, font_name: str = "宋体", font_size: Pt = Pt(12)):
+    """Set both Latin and CJK default fonts on the Normal style."""
     style = doc.styles["Normal"]
     style.font.name = font_name
     style.font.size = font_size
     style.paragraph_format.line_spacing = 1.5
+
+    # Set East-Asian font on the style element so Chinese text renders correctly
+    rPr = style.element.get_or_add_rPr()
+    rFonts = rPr.find(qn("w:rFonts"))
+    if rFonts is None:
+        rFonts = rPr.makeelement(qn("w:rFonts"), {})
+        rPr.insert(0, rFonts)
+    rFonts.set(qn("w:eastAsia"), font_name)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

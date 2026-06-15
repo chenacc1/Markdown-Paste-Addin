@@ -72,8 +72,7 @@ class DocumentBuilder:
             para.alignment = WD_ALIGN_PARAGRAPH.CENTER
             run = para.add_run(self.title)
             run.bold = True
-            run.font.size = Pt(22)
-            run.font.name = "黑体"
+            _set_run_font(run, latin=HEADING_LATIN_FONT, cjk=HEADING_CJK_FONT, size=Pt(22))
             para.paragraph_format.space_after = Pt(18)
 
         # Progress bar
@@ -108,9 +107,35 @@ class DocumentBuilder:
         doc = load_template(self.template_path)
 
         style = doc.styles["Normal"]
-        style.font.name = "Calibri"
-        style.font.size = Pt(11)
-        style.paragraph_format.line_spacing = 1.15
+        style.font.name = DEFAULT_LATIN_FONT
+        style.font.size = DEFAULT_FONT_SIZE
+        style.paragraph_format.line_spacing = 1.5
+
+        # Set CJK font on the Normal style so Chinese text renders in 宋体
+        style_rPr = style.element.get_or_add_rPr()
+        style_rFonts = style_rPr.find(qn("w:rFonts"))
+        if style_rFonts is None:
+            style_rFonts = style_rPr.makeelement(qn("w:rFonts"), {})
+            style_rPr.insert(0, style_rFonts)
+        style_rFonts.set(qn("w:eastAsia"), DEFAULT_CJK_FONT)
+        style_rFonts.set(qn("w:ascii"), DEFAULT_LATIN_FONT)
+        style_rFonts.set(qn("w:hAnsi"), DEFAULT_LATIN_FONT)
+
+        # Also fix heading styles — built-in defaults use Calibri which has no CJK glyphs
+        for level in range(1, 4):
+            try:
+                h_style = doc.styles[f"Heading {level}"]
+                h_style.font.name = HEADING_LATIN_FONT
+                h_rPr = h_style.element.get_or_add_rPr()
+                h_rFonts = h_rPr.find(qn("w:rFonts"))
+                if h_rFonts is None:
+                    h_rFonts = h_rPr.makeelement(qn("w:rFonts"), {})
+                    h_rPr.insert(0, h_rFonts)
+                h_rFonts.set(qn("w:eastAsia"), HEADING_CJK_FONT)
+                h_rFonts.set(qn("w:ascii"), HEADING_LATIN_FONT)
+                h_rFonts.set(qn("w:hAnsi"), HEADING_LATIN_FONT)
+            except KeyError:
+                pass  # style not present in template
 
         return doc
 
@@ -225,8 +250,7 @@ class DocumentBuilder:
             p.alignment = _wd_align(alignments[col_idx] if col_idx < len(alignments) else "left")
             run = p.add_run(header_text)
             run.bold = True
-            run.font.size = Pt(10)
-            run.font.name = "Calibri"
+            _set_run_font(run, latin=DEFAULT_LATIN_FONT, cjk=DEFAULT_CJK_FONT, size=Pt(10))
             _set_cell_shading(cell, "D9E2F3")
 
         # Data rows
@@ -238,8 +262,7 @@ class DocumentBuilder:
                     p = cell.paragraphs[0]
                     p.alignment = _wd_align(alignments[col_idx] if col_idx < len(alignments) else "left")
                     run = p.add_run(cell_text)
-                    run.font.size = Pt(10)
-                    run.font.name = "Calibri"
+                    _set_run_font(run, latin=DEFAULT_LATIN_FONT, cjk=DEFAULT_CJK_FONT, size=Pt(10))
 
         doc.add_paragraph()
 
@@ -301,8 +324,7 @@ class DocumentBuilder:
 
                 for token in line_tokens:
                     run = para.add_run(token["text"])
-                    run.font.name = "Consolas"
-                    run.font.size = Pt(9)
+                    _set_run_font(run, latin=CODE_FONT, cjk=CODE_FONT, size=CODE_FONT_SIZE)
                     style = token.get("style", {})
                     if "color" in style:
                         run.font.color.rgb = style["color"]
@@ -323,16 +345,32 @@ class DocumentBuilder:
         from .parser_math import latex_to_omml, _omml_wrap
 
         try:
-            omml_xml = latex_to_omml(latex, display)
+            inner_omml = latex_to_omml(latex, display)
+            wrapped_xml = _omml_wrap(inner_omml, display)
             if display:
+                # Display math: centered, standalone paragraph
                 para = doc.add_paragraph()
                 para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                _insert_omml_paragraph(para, omml_xml, display)
+                _insert_omml_element(para, wrapped_xml)
             else:
-                # Inline math — needs a paragraph with mixed text
-                para = doc.add_paragraph()
-                # Add placeholder for inline position
-                _insert_omml_run(para.add_run(""), omml_xml)
+                # Inline math: append to the last paragraph if it exists
+                # and is not empty/structured, otherwise create new paragraph
+                if doc.paragraphs:
+                    last_para = doc.paragraphs[-1]
+                    last_text = last_para.text.strip()
+                    # Only append to existing paragraph if it has plain text
+                    # and doesn't already contain math elements
+                    has_math = (
+                        last_para._element.findall(qn("m:oMath")) or
+                        last_para._element.findall(qn("m:oMathPara")))
+                    if last_text and not has_math:
+                        _insert_omml_element(last_para, wrapped_xml)
+                    else:
+                        para = doc.add_paragraph()
+                        _insert_omml_element(para, wrapped_xml)
+                else:
+                    para = doc.add_paragraph()
+                    _insert_omml_element(para, wrapped_xml)
         except Exception as e:
             para = doc.add_paragraph()
             run = para.add_run(f"${latex}$")
@@ -347,7 +385,7 @@ class DocumentBuilder:
             para = doc.add_paragraph()
             checkbox = "☒" if item.get("checked") else "☐"
             run = para.add_run(f"{checkbox}  {item.get('text', '')}")
-            run.font.size = Pt(11)
+            _set_run_font(run)
 
     # ── Blockquote ──
 
@@ -362,7 +400,7 @@ class DocumentBuilder:
         for run in para.runs:
             run.font.italic = True
             run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
-            run.font.size = Pt(10.5)
+            _set_run_font(run, size=Pt(10.5))
 
     # ── Horizontal rule ──
 
@@ -408,6 +446,66 @@ def build_docx(chunks: list[dict], output_path: str, **kwargs) -> str:
     return builder.build(chunks, output_path)
 
 
+# ─── Font helper — ensures both Latin and CJK fonts are set on every run ────────
+
+DEFAULT_LATIN_FONT = "Times New Roman"
+DEFAULT_CJK_FONT = "宋体"
+DEFAULT_FONT_SIZE = Pt(12)
+HEADING_CJK_FONT = "黑体"
+HEADING_LATIN_FONT = "Arial"
+CODE_FONT = "Consolas"
+CODE_FONT_SIZE = Pt(9)
+
+
+def _set_run_font(run, latin: str = None, cjk: str = None, size=None):
+    """Set both Latin (.font.name) and CJK (rFonts.eastAsia) fonts on a run.
+
+    Calling run.font.name alone only sets the Latin font. Chinese glyphs need
+    the East-Asian attribute on the rFonts element.
+    """
+    if latin is None:
+        latin = DEFAULT_LATIN_FONT
+    if cjk is None:
+        cjk = DEFAULT_CJK_FONT
+    if size is None:
+        size = DEFAULT_FONT_SIZE
+
+    run.font.name = latin
+    run.font.size = size
+    rPr = run._element.get_or_add_rPr()
+    rFonts = rPr.find(qn("w:rFonts"))
+    if rFonts is None:
+        rFonts = rPr.makeelement(qn("w:rFonts"), {})
+        rPr.insert(0, rFonts)
+    rFonts.set(qn("w:eastAsia"), cjk)
+    rFonts.set(qn("w:ascii"), latin)
+    rFonts.set(qn("w:hAnsi"), latin)
+
+
+def _set_style_default_font(doc: Document, latin: str = None, cjk: str = None, size=None):
+    """Set both Latin and CJK default fonts on the Normal style."""
+    if latin is None:
+        latin = DEFAULT_LATIN_FONT
+    if cjk is None:
+        cjk = DEFAULT_CJK_FONT
+    if size is None:
+        size = DEFAULT_FONT_SIZE
+
+    style = doc.styles["Normal"]
+    style.font.name = latin
+    style.font.size = size
+
+    # Set East-Asian font on the style's rPr
+    rPr = style.element.get_or_add_rPr()
+    rFonts = rPr.find(qn("w:rFonts"))
+    if rFonts is None:
+        rFonts = rPr.makeelement(qn("w:rFonts"), {})
+        rPr.insert(0, rFonts)
+    rFonts.set(qn("w:eastAsia"), cjk)
+    rFonts.set(qn("w:ascii"), latin)
+    rFonts.set(qn("w:hAnsi"), latin)
+
+
 # ─── Helpers ────────────────────────────────────────────────────────────────────
 
 def _wd_align(align: str):
@@ -437,26 +535,23 @@ def _set_paragraph_shading(para, color: str):
     pPr.append(shading)
 
 
-def _insert_omml_paragraph(para, omml_xml: str, display: bool = False):
-    """Insert OMML equation into a paragraph."""
-    from lxml import etree as _etree
-    nsmap = {
-        "m": "http://schemas.openxmlformats.org/officeDocument/2006/math",
-        "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
-    }
-    try:
-        omml_el = _etree.fromstring(omml_xml.encode("utf-8"))
-        run = para.add_run("")
-        run._r.append(omml_el)
-    except Exception:
-        pass
+def _insert_omml_element(para, omml_xml: str):
+    """Insert OMML equation XML into a paragraph.
 
+    The omml_xml should be a complete, well-formed OMML element
+    (e.g. <m:oMathPara> or <m:oMath>) with namespace declarations.
 
-def _insert_omml_run(run, omml_xml: str):
-    """Insert inline OMML into a run."""
+    Both display math (<m:oMathPara>) and inline math (<m:oMath>)
+    are appended directly as children of <w:p>. This is the correct
+    OMML structure — math elements are siblings of <w:r> within <w:p>.
+    """
     from lxml import etree as _etree
     try:
         omml_el = _etree.fromstring(omml_xml.encode("utf-8"))
-        run._r.append(omml_el)
-    except Exception:
-        pass
+        # Both <m:oMathPara> and <m:oMath> are direct children of <w:p>
+        para._element.append(omml_el)
+    except Exception as e:
+        # Fallback: insert as plain text
+        run = para.add_run("[公式]")
+        run.font.italic = True
+        run.font.color.rgb = RGBColor(0x99, 0x99, 0x99)

@@ -13,8 +13,16 @@ def parse_markdown(text: str) -> list[dict]:
               'task_list', 'blockquote', 'hr', 'heading'
       - plus type-specific data
     """
-    # Pre-extract math blocks to avoid conflicts with other syntax
+    # Pre-extract math blocks and replace with placeholders to avoid
+    # conflicts with other syntax (e.g. $ inside code blocks, tables)
     math_blocks = extract_math(text)
+    math_placeholder_map = {}
+    # Replace from end to start to preserve earlier positions
+    for idx in range(len(math_blocks) - 1, -1, -1):
+        mb = math_blocks[idx]
+        placeholder = f"MATH_PLACEHOLDER_{idx}"
+        math_placeholder_map[placeholder] = mb
+        text = text[:mb.start] + placeholder + text[mb.end:]
 
     lines = text.split("\n")
     chunks = []
@@ -117,9 +125,34 @@ def parse_markdown(text: str) -> list[dict]:
 
         chunk_text = "\n".join(text_lines).strip()
         if chunk_text:
-            chunks.append({"type": "text", "text": chunk_text})
+            _add_text_with_math(chunks, chunk_text, math_placeholder_map)
 
     return chunks
+
+
+def _add_text_with_math(chunks: list[dict], text: str,
+                        placeholder_map: dict[str, MathBlock]):
+    """Split text containing math placeholders into alternating text/math chunks."""
+    if not placeholder_map:
+        chunks.append({"type": "text", "text": text})
+        return
+
+    # Build a regex that matches any placeholder
+    pattern = "|".join(re.escape(k) for k in placeholder_map)
+    parts = re.split(f"({pattern})", text)
+
+    for part in parts:
+        if not part.strip():
+            continue
+        if part in placeholder_map:
+            mb = placeholder_map[part]
+            chunks.append({
+                "type": "math",
+                "latex": mb.text,
+                "display": mb.display,
+            })
+        else:
+            chunks.append({"type": "text", "text": part})
 
 
 # ─── Table parsing ──────────────────────────────────────────────────────────────

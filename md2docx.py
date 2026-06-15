@@ -35,7 +35,7 @@ from md2docx_lib.formatter import format_document
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Convert clipboard or Markdown file to Word .docx (v2.0)"
+        description="Convert clipboard or Markdown file to Word .docx (v3.2)"
     )
     parser.add_argument("arg1", nargs="?",
                         help="Output .docx path (clipboard mode) OR Input .md file")
@@ -90,9 +90,7 @@ def _process_clipboard(output_path: str, args):
         chunks = parse_html(data["content"])
     else:
         print("Parsing Markdown...")
-        from md2docx_lib.inline_processor import clean_text
-        content = clean_text(data["content"])
-        chunks = parse_markdown(content)
+        chunks = parse_markdown(data["content"])
 
     _build(chunks, output_path, args)
 

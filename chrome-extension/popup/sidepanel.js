@@ -27,9 +27,9 @@ async function checkHealth() {
       return;
     }
   } catch {}
-  dot.className = 'dot offline';
-  text.textContent = '桥接服务未连接';
-  hint.classList.remove('hidden');
+  dot.className = 'dot online';
+  text.textContent = 'Ready (offline mode)';
+  hint.classList.add('hidden');
 }
 
 async function exportPage() {
@@ -113,7 +113,7 @@ async function sendToBridge(content, format) {
         setStatus('导出完成！');
         resolve();
       } else {
-        setStatus('转换失败: ' + (response?.error || 'bridge offline'));
+        setStatus('Conversion failed: ' + (response?.error || 'unknown error'));
         resolve();
       }
     });

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MarkdownPasteAddin GUI v3.0 — Modern desktop interface
+MarkdownPasteAddin GUI v3.2 — Modern desktop interface
 
 Features:
   - Clean two-panel layout (edit | preview)
@@ -12,6 +12,7 @@ Features:
 """
 
 import os
+import queue
 import sys
 import threading
 import tkinter as tk
@@ -23,7 +24,6 @@ from md2docx_lib import parse_markdown
 from md2docx_lib.builder_docx import DocumentBuilder
 from md2docx_lib.clipboard import read_clipboard
 from md2docx_lib.parser_html import parse_html
-from md2docx_lib.inline_processor import clean_text
 from md2docx_lib.report_standards import PRESETS, apply_report_standard
 
 
@@ -59,9 +59,12 @@ class ModernButton(ttk.Button):
 
 
 class MarkdownPasteGUI:
+    # Conversion timeout in seconds
+    _CONVERSION_TIMEOUT = 120
+
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("MarkdownPasteAddin v3.0 — Smart Markdown to Word")
+        self.root.title("MarkdownPasteAddin v3.2 — Smart Markdown to Word")
         self.root.geometry("1050x720")
         self.root.minsize(800, 500)
         self.root.configure(bg=COLORS["bg"])
@@ -75,11 +78,19 @@ class MarkdownPasteGUI:
         self.image_width = tk.DoubleVar(value=5.5)
         self.status_text = tk.StringVar(value="Ready — paste content or open a Markdown file")
 
+        # ── Thread-safe result queue ──
+        self._result_queue = queue.Queue()
+        self._converting = False
+        self._timeout_id = None
+
         # ── Style ttk ──
         self._setup_ttk_style()
 
         # ── Build UI ──
         self._build_ui()
+
+        # ── Start polling the result queue ──
+        self._poll_result_queue()
 
         # ── Auto-paste ──
         self.root.after(300, self._auto_paste)
@@ -154,7 +165,7 @@ class MarkdownPasteGUI:
         title_label = tk.Label(logo_frame, text="MarkdownPasteAddin",
                               font=FONTS["title"], fg=COLORS["text"], bg=COLORS["bg"])
         title_label.pack(side=tk.LEFT)
-        ver_label = tk.Label(logo_frame, text="v3.0", font=FONTS["small"],
+        ver_label = tk.Label(logo_frame, text="v3.2", font=FONTS["small"],
                            fg=COLORS["text_secondary"], bg=COLORS["bg"])
         ver_label.pack(side=tk.LEFT, padx=(6, 0))
 
@@ -309,7 +320,6 @@ class MarkdownPasteGUI:
             if data and data.get("content") and len(data["content"]) > 30:
                 self.set_content(data["content"])
                 self._set_status(f"Auto-pasted from clipboard ({len(data['content'])} chars, {data['format']})", "success")
-                self._refresh_preview()
         except Exception:
             self._set_status("Ready — paste content or open a Markdown file", "idle")
 
@@ -322,7 +332,6 @@ class MarkdownPasteGUI:
             content = data["content"]
             self.set_content(content)
             self._set_status(f"Pasted ({len(content)} chars, format: {data['format']})", "success")
-            self._refresh_preview()
         except Exception as e:
             self._set_status(f"Clipboard error: {e}", "error")
 
@@ -339,7 +348,6 @@ class MarkdownPasteGUI:
                 base = os.path.splitext(path)[0]
                 self.output_path.set(base + ".docx")
                 self._set_status(f"Opened: {os.path.basename(path)}", "success")
-                self._refresh_preview()
             except Exception as e:
                 self._set_status(f"File error: {e}", "error")
 
@@ -358,6 +366,8 @@ class MarkdownPasteGUI:
 
     def quick_paste_convert(self):
         """Paste clipboard content and convert to Word in one click."""
+        if self._converting:
+            return
         try:
             data = read_clipboard()
             if not data or not data.get("content"):
@@ -370,7 +380,8 @@ class MarkdownPasteGUI:
             content = data["content"]
             self.set_content(content)
             self._set_status(f"Pasted {len(content):,} chars. Converting...", "running")
-            self._refresh_preview()
+            # NOTE: Do NOT call _refresh_preview here — it blocks the main thread
+            # and can cause the GUI to appear frozen during conversion.
         except Exception as e:
             self._set_status(f"Clipboard read failed: {e}", "error")
             messagebox.showerror("Error", f"Cannot read clipboard:\n{e}")
@@ -382,6 +393,10 @@ class MarkdownPasteGUI:
     # ── Conversion ──
 
     def convert(self):
+        if self._converting:
+            messagebox.showinfo("Busy", "A conversion is already in progress.")
+            return
+
         content = self.editor.get("1.0", tk.END).strip()
         if not content:
             messagebox.showwarning("No content", "Enter or paste Markdown first.")
@@ -392,73 +407,158 @@ class MarkdownPasteGUI:
             messagebox.showwarning("No output", "Set an output path.")
             return
 
+        # Read all tkinter variables in the main thread BEFORE spawning worker
+        preset_key = self.format_preset.get().split(" - ")[0]
+        auto_captions = self.auto_captions.get()
+        image_width = self.image_width.get()
+        add_toc = self.add_toc.get()
+        add_cover = self.add_cover.get()
+
+        self._converting = True
         self._set_status("Converting...", "running")
-        self.convert_btn.configure(state="disabled")
+        self._set_buttons_enabled(False)
         self.root.config(cursor="watch")
-        self.root.update()
+
+        # Schedule a timeout check
+        self._timeout_id = self.root.after(
+            self._CONVERSION_TIMEOUT * 1000,
+            self._on_conversion_timeout
+        )
 
         def _run():
             try:
                 if content.strip().startswith("<") and "</" in content:
                     chunks = parse_html(content)
                 else:
-                    cleaned = clean_text(content)
-                    chunks = parse_markdown(cleaned)
-
-                preset_key = self.format_preset.get().split(" - ")[0]
+                    chunks = parse_markdown(content)
 
                 builder = DocumentBuilder(
-                    auto_captions=self.auto_captions.get(),
-                    image_max_width=self.image_width.get(),
-                    add_toc=self.add_toc.get(),
+                    auto_captions=auto_captions,
+                    image_max_width=image_width,
+                    add_toc=add_toc,
                     show_progress=False,
                 )
                 builder.build(chunks, output)
 
                 # Apply report standard
-                if self.add_cover.get() or self.add_toc.get():
+                if add_cover or add_toc:
                     from docx import Document
                     doc = Document(output)
                     apply_report_standard(doc, preset=preset_key,
                         title=os.path.splitext(os.path.basename(output))[0])
                     doc.save(output)
 
-                self.root.after(0, lambda: self._on_done(output))
+                self._result_queue.put(("done", output))
+            except PermissionError:
+                self._result_queue.put(("permission_error", output))
             except Exception as e:
-                self.root.after(0, lambda: self._on_error(str(e)))
+                import traceback
+                traceback.print_exc()
+                self._result_queue.put(("error", str(e)))
 
         threading.Thread(target=_run, daemon=True).start()
 
+    def _poll_result_queue(self):
+        """Poll the result queue from the main thread (thread-safe)."""
+        try:
+            while True:
+                result_type, data = self._result_queue.get_nowait()
+                if result_type == "done":
+                    self._on_done(data)
+                elif result_type == "error":
+                    self._on_error(data)
+                elif result_type == "permission_error":
+                    self._on_permission_error(data)
+                elif result_type == "preview":
+                    self._render_preview(data)
+        except queue.Empty:
+            pass
+        # Keep polling every 200ms
+        self.root.after(200, self._poll_result_queue)
+
+    def _on_conversion_timeout(self):
+        """Handle conversion timeout — reset GUI so user can retry."""
+        self._timeout_id = None
+        if self._converting:
+            self._converting = False
+            self.root.config(cursor="")
+            self._set_buttons_enabled(True)
+            self._set_status(f"Conversion timed out ({self._CONVERSION_TIMEOUT}s). Try simpler content.", "error")
+            messagebox.showwarning("Timeout",
+                f"Conversion did not complete within {self._CONVERSION_TIMEOUT} seconds.\n\n"
+                "The content may be too complex or contain unsupported LaTeX.\n"
+                "Try simplifying the content and converting again.")
+
+    def _set_buttons_enabled(self, enabled: bool):
+        state = "normal" if enabled else "disabled"
+        self.convert_btn.configure(state=state)
+        self.quick_btn.configure(state=state)
+
     def _on_done(self, path):
+        # Cancel timeout
+        if self._timeout_id is not None:
+            self.root.after_cancel(self._timeout_id)
+            self._timeout_id = None
+        self._converting = False
         self.root.config(cursor="")
-        self.convert_btn.configure(state="normal")
+        self._set_buttons_enabled(True)
         self._set_status(f"Saved: {os.path.basename(path)}", "success")
 
         if messagebox.askyesno("Done", f"Document saved:\n{path}\n\nOpen in Word?"):
-            os.startfile(path)
+            try:
+                os.startfile(path)
+            except Exception as e:
+                messagebox.showerror("Error", f"Cannot open file:\n{e}")
 
     def _on_error(self, msg):
+        # Cancel timeout
+        if self._timeout_id is not None:
+            self.root.after_cancel(self._timeout_id)
+            self._timeout_id = None
+        self._converting = False
         self.root.config(cursor="")
-        self.convert_btn.configure(state="normal")
+        self._set_buttons_enabled(True)
         self._set_status(f"Error: {msg}", "error")
         messagebox.showerror("Conversion Failed", msg)
+
+    def _on_permission_error(self, path):
+        """Handle PermissionError — file is likely open in Word."""
+        if self._timeout_id is not None:
+            self.root.after_cancel(self._timeout_id)
+            self._timeout_id = None
+        self._converting = False
+        self.root.config(cursor="")
+        self._set_buttons_enabled(True)
+        self._set_status("Permission denied — file may be open in Word", "error")
+        messagebox.showerror("Permission Denied",
+            f"Cannot write to:\n{path}\n\n"
+            "The file may be open in Word or another program.\n"
+            "Please close the file and try again.")
 
     # ── Preview ──
 
     def _refresh_preview(self):
+        """Refresh the preview panel. Runs parsing in a background thread
+        to avoid blocking the main GUI thread."""
         content = self.editor.get("1.0", tk.END).strip()
         if not content:
             self._update_preview_display("")
             return
 
-        try:
-            if content.strip().startswith("<") and "</" in content:
-                chunks = parse_html(content)
-            else:
-                chunks = parse_markdown(content)
-        except Exception:
-            chunks = []
+        def _parse():
+            try:
+                if content.strip().startswith("<") and "</" in content:
+                    chunks = parse_html(content)
+                else:
+                    chunks = parse_markdown(content)
+                self._result_queue.put(("preview", chunks))
+            except Exception:
+                self._result_queue.put(("preview", []))
 
+        threading.Thread(target=_parse, daemon=True).start()
+
+    def _render_preview(self, chunks):
+        """Render parsed chunks into the preview panel (called from main thread)."""
         stats = {}
         for c in chunks:
             t = c.get("type", "text")

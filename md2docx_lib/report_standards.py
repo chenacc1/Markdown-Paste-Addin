@@ -550,6 +550,13 @@ def format_all_paragraphs(doc: Document, preset: ReportPreset):
         if not text:
             continue
 
+        # Skip paragraphs that contain OMML math elements
+        math_ns = "http://schemas.openxmlformats.org/officeDocument/2006/math"
+        if para._element.find(f".//{{{math_ns}}}oMath") is not None:
+            continue
+        if para._element.find(f".//{{{math_ns}}}oMathPara") is not None:
+            continue
+
         # Detect paragraph type
         style_name = _detect_semantic_type(para, text)
 

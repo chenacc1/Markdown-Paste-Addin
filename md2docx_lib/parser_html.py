@@ -13,6 +13,8 @@ try:
 except ImportError:
     pass
 
+from .parser_math import extract_math
+
 
 def parse_html(html: str, base_url: str = "") -> list[dict]:
     """Parse HTML into chunks of text, table, image, mermaid, code, etc."""
@@ -29,12 +31,6 @@ def parse_html(html: str, base_url: str = "") -> list[dict]:
     for tag in soup.find_all(["script", "style"]):
         tag.decompose()
 
-    # Detect KaTeX/MathJax
-    for span in soup.find_all("span", class_=re.compile(r"katex|math", re.I)):
-        text = span.get_text()
-        if text:
-            chunks.append({"type": "math", "latex": text, "display": False})
-
     body = soup.find("body") or soup
     _walk_html(body, chunks, base_url)
 
@@ -49,10 +45,7 @@ def _walk_html(element: Tag, chunks: list[dict], base_url: str):
         if isinstance(child, str):
             text = child.strip()
             if text:
-                if chunks and chunks[-1]["type"] == "text":
-                    chunks[-1]["text"] += "\n" + text
-                else:
-                    chunks.append({"type": "text", "text": text})
+                _add_text_with_math(text, chunks)
             continue
 
         if not isinstance(child, Tag):
@@ -75,11 +68,11 @@ def _walk_html(element: Tag, chunks: list[dict], base_url: str):
                 chunks.append({"type": "image", "src": urljoin(base_url, src) if base_url else src, "alt": alt})
             continue
 
-        # Math elements
+        # Math elements (KaTeX/MathJax rendered HTML)
         if _is_math_element(child):
-            text = child.get_text()
+            latex = _extract_latex_from_math(child)
             display = "display" in child.get("class", []) or child.name in ("math", "mrow")
-            chunks.append({"type": "math", "latex": text, "display": display})
+            chunks.append({"type": "math", "latex": latex, "display": display})
             continue
 
         # Headings
@@ -87,7 +80,7 @@ def _walk_html(element: Tag, chunks: list[dict], base_url: str):
             level = int(tag_name[1])
             text = child.get_text(strip=True)
             if text:
-                chunks.append({"type": "heading", "level": level, "text": text})
+                _add_text_with_math(text, chunks, default_type="heading", level=level)
             continue
 
         # Blockquote
@@ -143,7 +136,7 @@ def _walk_html(element: Tag, chunks: list[dict], base_url: str):
             elif tag_name == "p":
                 text = child.get_text(strip=True)
                 if text:
-                    chunks.append({"type": "text", "text": text})
+                    _add_text_with_math(text, chunks)
             else:
                 _walk_html(child, chunks, base_url)
             continue
@@ -158,6 +151,70 @@ def _is_math_element(tag: Tag) -> bool:
             "mathjax" in str(classes).lower() or
             name in ("math", "mi", "mo", "mn", "mrow", "msup", "msub",
                      "mfrac", "msqrt", "mtable", "mtr", "mtd"))
+
+
+def _extract_latex_from_math(tag: Tag) -> str:
+    """Extract LaTeX source from a KaTeX/MathJax HTML element."""
+    # KaTeX stores the source in <annotation> tag
+    annotation = tag.find("annotation")
+    if annotation:
+        text = annotation.get_text()
+        if text:
+            return text.strip()
+    # Fallback: use text content
+    return tag.get_text().strip()
+
+
+def _add_text_with_math(text: str, chunks: list[dict], **extra):
+    """Add text to chunks, extracting any LaTeX math expressions first."""
+    math_blocks = extract_math(text)
+    if not math_blocks:
+        # No math — add as plain text or heading
+        if extra.get("default_type") == "heading":
+            chunks.append({"type": "heading", "level": extra["level"], "text": text})
+        else:
+            chunks.append({"type": "text", "text": text})
+        return
+
+    # Replace math blocks with placeholders (from end to avoid offset shifts)
+    for i in range(len(math_blocks) - 1, -1, -1):
+        mb = math_blocks[i]
+        placeholder = f"MATH_PLACEHOLDER_{i}"
+        text = text[:mb.start] + placeholder + text[mb.end:]
+
+    # Split by placeholders and emit alternating text/math chunks
+    parts = text.split("MATH_PLACEHOLDER_")
+    for idx, part in enumerate(parts):
+        if not part:
+            continue
+        # Check if this part starts with a placeholder index
+        # Format: "0rest_of_text" or just "rest_of_text"
+        num_str = ""
+        rest = part
+        for ch in part:
+            if ch.isdigit():
+                num_str += ch
+            else:
+                break
+        if num_str and len(num_str) < len(part):
+            # Has a placeholder index followed by text
+            math_idx = int(num_str)
+            rest = part[len(num_str):]
+            chunks.append({"type": "math", "latex": math_blocks[math_idx].text,
+                          "display": math_blocks[math_idx].display})
+            if rest:
+                chunks.append({"type": "text", "text": rest})
+        elif num_str and len(num_str) == len(part):
+            # Entire part is a placeholder index
+            math_idx = int(num_str)
+            chunks.append({"type": "math", "latex": math_blocks[math_idx].text,
+                          "display": math_blocks[math_idx].display})
+        else:
+            # Pure text
+            if extra.get("default_type") == "heading":
+                chunks.append({"type": "heading", "level": extra["level"], "text": part})
+            else:
+                chunks.append({"type": "text", "text": part})
 
 
 def _parse_list(list_tag: Tag, list_type: str, chunks: list[dict], level: int = 0):

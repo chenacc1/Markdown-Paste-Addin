@@ -20,6 +20,31 @@ from docx.shared import Pt, RGBColor
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
+DEFAULT_LATIN_FONT = "Times New Roman"
+DEFAULT_CJK_FONT = "宋体"
+DEFAULT_FONT_SIZE = Pt(12)
+
+
+def _set_run_font(run, latin: str = None, cjk: str = None, size=None):
+    """Set both Latin (.font.name) and CJK (rFonts.eastAsia) fonts on a run."""
+    if latin is None:
+        latin = DEFAULT_LATIN_FONT
+    if cjk is None:
+        cjk = DEFAULT_CJK_FONT
+    if size is None:
+        size = DEFAULT_FONT_SIZE
+
+    run.font.name = latin
+    run.font.size = size
+    rPr = run._element.get_or_add_rPr()
+    rFonts = rPr.find(qn("w:rFonts"))
+    if rFonts is None:
+        rFonts = rPr.makeelement(qn("w:rFonts"), {})
+        rPr.insert(0, rFonts)
+    rFonts.set(qn("w:eastAsia"), cjk)
+    rFonts.set(qn("w:ascii"), latin)
+    rFonts.set(qn("w:hAnsi"), latin)
+
 
 # ─── Token types ────────────────────────────────────────────────────────────────
 
@@ -55,17 +80,22 @@ def process_inline_paragraph(para, text: str):
         run = para.add_run(token_text)
         if token_type == "bold":
             run.font.bold = True
+            _set_run_font(run)
         elif token_type == "italic":
             run.font.italic = True
+            _set_run_font(run)
         elif token_type == "bold_italic":
             run.font.bold = True
             run.font.italic = True
+            _set_run_font(run)
         elif token_type == "code":
-            run.font.name = "Consolas"
-            run.font.size = Pt(9.5)
+            _set_run_font(run, latin="Consolas", cjk="Consolas", size=Pt(9.5))
             run.font.color.rgb = RGBColor(180, 60, 60)
         elif token_type == "strikethrough":
             _apply_strikethrough(run)
+            _set_run_font(run)
+        else:
+            _set_run_font(run)
 
 
 def clean_text(text: str) -> str:

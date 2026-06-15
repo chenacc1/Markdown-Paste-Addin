@@ -3,10 +3,10 @@
     "message": "MarkdownPasteAddin - 智能粘贴Word"
   },
   "extDesc": {
-    "message": "一键将网页中的Markdown/表格/流程图/数学公式内容导出为Word文档。支持DeepSeek、ChatGPT等AI平台。"
+    "message": "一键将网页中的Markdown/表格/代码块/数学公式内容导出为Word文档。支持DeepSeek、ChatGPT等AI平台，数学公式原生OMML渲染，离线可用。"
   },
   "exportButton": {
-    "message": "导出Word"
+    "message": "导出为Word"
   },
   "exportSelected": {
     "message": "导出选中内容为Word"
@@ -15,13 +15,13 @@
     "message": "导出整页内容为Word"
   },
   "serviceOffline": {
-    "message": "桥接服务未启动"
+    "message": "离线模式"
   },
   "serviceOnline": {
     "message": "桥接服务已连接"
   },
   "startService": {
-    "message": "请运行 启动桥接服务.bat"
+    "message": "安装即用，无需额外配置"
   },
   "converting": {
     "message": "正在转换..."
