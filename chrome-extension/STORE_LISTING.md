@@ -46,7 +46,7 @@ python _repack.py
 简短描述（45字）: 将网页Markdown/表格/流程图/公式一键导出为Word
 详细描述: 见下方「商店描述」文本
 开发者: [你的名字/组织名称]
-网站: https://github.com/user/MarkdownPasteAddin
+网站: https://github.com/chenacc1/Markdown-Paste-Addin
 隐私政策URL: [如果收集数据才需要，本扩展不收集任何数据]
 支持邮箱: [你的邮箱]
 ```
@@ -132,7 +132,7 @@ python _repack.py
 
 本扩展可连接本地 HTTP 桥接服务 (127.0.0.1:9876) 实现更完整的 Word 文档生成。所有数据在本地处理，不会上传到任何远程服务器。
 
-桥接服务下载和安装说明: https://github.com/user/MarkdownPasteAddin
+桥接服务下载和安装说明: https://github.com/chenacc1/Markdown-Paste-Addin
 
 一键启动: 双击 `启动桥接服务.bat`（Windows）或运行 `python bridge_server.py`
 
@@ -225,7 +225,7 @@ For everyday Markdown-to-Word conversion, the extension alone is sufficient. Ins
 
 This extension can connect to a local HTTP bridge service (127.0.0.1:9876) for enhanced Word document generation. All data is processed locally on your computer — nothing is uploaded to any remote server.
 
-Bridge server download: https://github.com/user/MarkdownPasteAddin
+Bridge server download: https://github.com/chenacc1/Markdown-Paste-Addin
 
 One-click launch: Run `启动桥接服务.bat` (Windows) or `python bridge_server.py`
 
