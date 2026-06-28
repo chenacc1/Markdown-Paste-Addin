@@ -79,6 +79,7 @@
       }
     }, (response) => {
       if (response?.success) {
+        downloadBlob(response.base64, response.filename, response.mimeType);
         showToast('导出完成: ' + (response.filename || 'export.docx'));
       } else {
         showToast('转换失败: ' + (response?.error || '桥接服务未启动'));
@@ -368,11 +369,42 @@
             auto_captions: true,
             image_width: 5.5
           }
+        }, (response) => {
+          if (response?.success) {
+            downloadBlob(response.base64, response.filename, response.mimeType);
+            showToast('导出完成: ' + (response.filename || 'export.docx'));
+          } else {
+            showToast('转换失败: ' + (response?.error || '桥接服务未启动'));
+          }
         });
       }
     }
     return false;
   });
+
+  // --- Download helper (uses blob URL, compatible with Edge) ---------------------
+
+  function downloadBlob(base64, filename, mimeType) {
+    if (!base64) return;
+    try {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: mimeType || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'export.docx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (e) {
+      console.error('Download failed:', e);
+    }
+  }
 
   // --- Toast notification -------------------------------------------------------
 

@@ -66,6 +66,8 @@ async function checkBridgeHealth() {
 }
 
 async function convertToDocx(content, format = 'markdown', options = {}) {
+  const MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
   // Step 1: Try bridge server for full-featured conversion
   try {
     const resp = await fetch(`${BRIDGE_URL}/api/convert`, {
@@ -83,10 +85,7 @@ async function convertToDocx(content, format = 'markdown', options = {}) {
       const arrayBuffer = await resp.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
       const base64 = arrayBufferToBase64(bytes);
-      const dataUrl = 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,' + base64;
-
-      await chrome.downloads.download({ url: dataUrl, filename: filename, saveAs: true });
-      return { success: true, filename: filename, via: 'bridge' };
+      return { success: true, base64, filename, via: 'bridge', mimeType: MIME };
     }
   } catch {
     // Bridge unavailable — fall through to local generation
@@ -98,71 +97,41 @@ async function convertToDocx(content, format = 'markdown', options = {}) {
 
 // --- Local (offline) conversion -------------------------------------------------
 function convertToDocxLocal(content, format, options) {
+  const MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   try {
-    // Convert HTML to plain text / markdown if needed
     let mdContent = content;
     if (format === 'html') {
-      // Basic HTML-to-text: strip tags, preserve structure
-      const temp = document.createElement('div');
-      temp.innerHTML = content;
-      mdContent = htmlToMarkdownApprox(temp);
+      mdContent = stripHtml(content);
     }
 
-    // Markdown is already parsed as markdown
     const docxBytes = DocxBuilder.buildDocx(mdContent, options);
     const base64 = arrayBufferToBase64(docxBytes);
     const title = (options.title || 'export').replace(/[<>:"/\\|?*]/g, '_').substring(0, 80) || 'export';
-    const dataUrl = 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,' + base64;
-
-    return chrome.downloads.download({
-      url: dataUrl,
-      filename: title + '.docx',
-      saveAs: true
-    }).then(() => ({ success: true, filename: title + '.docx', via: 'local' }));
+    return { success: true, base64, filename: title + '.docx', via: 'local', mimeType: MIME };
   } catch (e) {
     throw new Error('Local conversion failed: ' + e.message);
   }
 }
 
-function htmlToMarkdownApprox(root) {
-  let md = '';
-  function walk(el, depth) {
-    if (depth > 30 || !el) return;
-    if (el.nodeType === Node.TEXT_NODE) {
-      const t = el.textContent.trim();
-      if (t) md += t + '\n';
-      return;
-    }
-    if (el.nodeType !== Node.ELEMENT_NODE) return;
-    const tag = el.tagName;
-    if (['SCRIPT', 'STYLE', 'NAV', 'FOOTER', 'HEADER'].includes(tag)) return;
-    switch (tag) {
-      case 'H1': md += `# ${el.textContent.trim()}\n\n`; break;
-      case 'H2': md += `## ${el.textContent.trim()}\n\n`; break;
-      case 'H3': md += `### ${el.textContent.trim()}\n\n`; break;
-      case 'H4': md += `#### ${el.textContent.trim()}\n\n`; break;
-      case 'P': md += el.textContent.trim() + '\n\n'; break;
-      case 'PRE': md += '```\n' + el.textContent.trim() + '\n```\n\n'; break;
-      case 'LI': md += `- ${el.textContent.trim()}\n`; break;
-      case 'HR': md += '---\n\n'; break;
-      case 'TABLE': {
-        const rows = el.querySelectorAll('tr');
-        if (rows.length) {
-          const hdr = rows[0].querySelectorAll('th,td');
-          md += '| ' + [...hdr].map(c => c.textContent.trim()).join(' | ') + ' |\n';
-          md += '| ' + [...hdr].map(() => '---').join(' | ') + ' |\n';
-          for (let i = 1; i < rows.length; i++) {
-            md += '| ' + [...rows[i].querySelectorAll('td,th')].map(c => c.textContent.trim()).join(' | ') + ' |\n';
-          }
-          md += '\n';
-        }
-        break;
-      }
-      default: for (const c of el.childNodes) walk(c, depth + 1);
-    }
-  }
-  walk(root, 0);
-  return md;
+function stripHtml(html) {
+  // DOM-free HTML-to-text: remove tags, decode entities, preserve line breaks
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<\/tr>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .split('\n').map(s => s.trim()).join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 // --- Utilities -----------------------------------------------------------------

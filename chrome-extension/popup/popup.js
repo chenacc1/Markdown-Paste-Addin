@@ -196,9 +196,32 @@ async function sendToBridge(content, format) {
     throw new Error(result?.error || 'Conversion failed');
   }
 
+  // Download via blob URL (Edge-compatible) instead of data: URL in service worker
+  const blob = base64ToBlob(result.base64, result.mimeType);
+  const blobUrl = URL.createObjectURL(blob);
+
+  try {
+    await chrome.downloads.download({
+      url: blobUrl,
+      filename: result.filename,
+      saveAs: true
+    });
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+  }
+
   const via = result.via || 'bridge';
   setStatus('done', via === 'local' ? 'Done (offline mode)' : 'Choose save location...');
   setTimeout(() => window.close(), 2000);
+}
+
+function base64ToBlob(base64, mimeType) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mimeType });
 }
 
 async function openSidePanel() {
